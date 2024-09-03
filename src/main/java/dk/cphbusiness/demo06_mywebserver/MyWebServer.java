@@ -1,4 +1,6 @@
-package dk.cphbusiness.demo05_fileserver;
+package dk.cphbusiness.demo06_mywebserver;
+
+import dk.cphbusiness.demo05_fileserver.RequestFileServer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,7 +13,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RequestFileServer {
+public class MyWebServer {
 
     private static final int PORT = 9090;
 
@@ -32,12 +34,7 @@ public class RequestFileServer {
                      BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
 
                     // Read the request from the client
-                    RequestDTO requestDTO = generateRequestObject(in);
-                    if (requestDTO == null) {
-                        System.out.println("Skipping request");
-                        continue;
-                    }
-
+                    RequestFileServer.RequestDTO requestDTO = generateRequestObject(in);
                     String requestLine = requestDTO.getRequestLine();
                     String resource = requestLine.split(" ")[1];
 
@@ -48,13 +45,7 @@ public class RequestFileServer {
                         out.println(httpResponse);
 
                         System.out.println("Login request received. Shutting down the server.");
-                        continue;  // Stop the server after login request
-                    }
-                    if (resource.split("\\?")[0].equals("/addournumbers")) {
-                        String response = handleAddition("pages/addingtemplate.html", requestDTO.getQueryParams());
-                        String httpResponse = httpResponseWrapper(response);
-                        out.println(httpResponse);
-                        continue;
+                        break;  // Stop the server after login request
                     }
 
                     // Get the file from the resource
@@ -71,52 +62,6 @@ public class RequestFileServer {
             e.printStackTrace();
         }
     }
-
-    public String renderTemplate(String filename, Map<String, String> queryParams) {
-
-        String adding = getFile(filename);
-
-        for (Map.Entry<String, String> entry : queryParams.entrySet()) {
-            String replacer = "<!--$" + entry.getKey() + "-->";
-            adding = adding.replace(replacer, entry.getValue());
-        }
-        return adding;
-    }
-
-    private String handleAddition(String resource, Map<String, String> queryParams) {
-
-        String resultMessage = "Missing parameters";
-
-        String firstNumberStr = queryParams.get("firstNumber");
-        String secondNumberStr = queryParams.get("secondNumber");
-        String operatorStr = queryParams.get("operator");
-
-        if (firstNumberStr != null || secondNumberStr != null || operatorStr != null) {
-        }
-        try {
-
-            int firstNumber = Integer.parseInt(firstNumberStr);
-            int secondNumber = Integer.parseInt(secondNumberStr);
-            int result;
-
-            if ("add".equals(operatorStr)) {
-                result = firstNumber + secondNumber;
-                resultMessage = "Result : " + result;
-            } else if ("mul".equals(operatorStr)) {
-                result = firstNumber * secondNumber;
-                resultMessage = "Result : " + result;
-            } else {
-                resultMessage = "Invalid input";
-            }
-
-        } catch (NumberFormatException e) {
-            resultMessage = "Invalid numbers";
-        }
-
-        queryParams.put("result", resultMessage);
-        return renderTemplate(resource, queryParams);
-    }
-
 
     private String getFile(String resource) {
         resource = reformatResource(resource); // Remove leading / and add .html if not present
@@ -158,21 +103,19 @@ public class RequestFileServer {
         return resource;
     }
 
-    public RequestDTO generateRequestObject(BufferedReader in) {
+    public RequestFileServer.RequestDTO generateRequestObject(BufferedReader in) {
         String requestLine = null;
         Map<String, String> headers = null;
         Map<String, String> queryParams = null;
         Map<String, String> requestBodyData = new HashMap<>();
-        RequestDTO requestDTO = new RequestDTO();
+        RequestFileServer.RequestDTO requestDTO = new RequestFileServer.RequestDTO();
 
         try {
             StringBuilder requestBuilder = new StringBuilder();
             requestLine = in.readLine();
 
             if (requestLine == null || requestLine.isEmpty()) {
-                System.out.println("The request line is null or empty");
-                return null;
-
+                throw new IllegalArgumentException("The request is lacking the request line and is therefore not a valid HTTP request");
             }
 
             if (!in.ready()) {
@@ -199,7 +142,7 @@ public class RequestFileServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return new RequestDTO(requestLine, headers, queryParams, requestBodyData);
+        return new RequestFileServer.RequestDTO(requestLine, headers, queryParams, requestBodyData);
     }
 
     private Map<String, String> getHeadersFromRequest(StringBuilder requestBuilder) {
@@ -340,3 +283,5 @@ public class RequestFileServer {
     }
 
 }
+
+

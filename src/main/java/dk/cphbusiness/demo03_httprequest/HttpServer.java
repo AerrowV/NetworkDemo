@@ -22,7 +22,7 @@ public class HttpServer
     {
         HttpServer server = new HttpServer();
         System.out.println("Now get this webpage from a browser, tiger!");
-        System.out.println("On http://localhost:" + PORT);
+        System.out.println("On http://127.0.0.1:" + PORT);
         server.startConnection(PORT);
     }
 
